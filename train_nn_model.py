@@ -67,11 +67,11 @@ def get_embedding_matrix(tokenizer, vocab, model):
 	return embedding_matrix
 
 
-def get_train_data():
+def get_train_data(file):
 	words_1 = []
 	words_2 = []
 	Y_s = []
-	with open('train_data.txt', 'r', encoding='utf-8-sig') as file:
+	with open(file, 'r', encoding='utf-8-sig') as file:
 		for line in file.read().split('\n'):
 			line = line.split(',')
 
@@ -86,6 +86,16 @@ def get_train_data():
 	return pd.DataFrame({'w1' : words_1, 'w2' : words_2, 'Y' : Y_s})
 
 
+def prepare_train_data(tokenizer, data):
+	train, test = train_test_split(data, test_size=0.2)
+
+	X_train = np.array([[tokenizer.text_to_seq(train['w1'][index]), tokenizer.text_to_seq(train['w2'][index])] for index in train.index.values])
+	Y_train = np.array(train['Y'])
+
+	X_test = np.array([[tokenizer.text_to_seq(test['w1'][index]), tokenizer.text_to_seq(test['w2'][index])] for index in test.index.values])
+	Y_test = np.array(test['Y'])
+
+	return {'train' : (X_train, Y_train), 'test' : (X_test, Y_test)}
 
 
 def main():
@@ -103,31 +113,36 @@ def main():
 
 
 	embedding_matrix = get_embedding_matrix(tokenizer, vocab, model)
-	dl_model = build_dl_model(embedding_matrix)
-
-	dl_model.summary()
 	
-	data = get_train_data()
-	data = shuffle(data)
-	
-	train, test = train_test_split(data, test_size=0.2)
+	dl_model_hyperyms = build_dl_model(embedding_matrix)
+	dl_model_hyponyms = build_dl_model(embedding_matrix)
 
-	X_train = np.array([[tokenizer.text_to_seq(train['w1'][index]), tokenizer.text_to_seq(train['w2'][index])] for index in train.index.values])
-	Y_train = np.array(train['Y'])
+	dl_model_hyperyms.summary()
 
-	X_test = np.array([[tokenizer.text_to_seq(test['w1'][index]), tokenizer.text_to_seq(test['w2'][index])] for index in test.index.values])
-	Y_test = np.array(test['Y'])
+	hyperyms_data = get_train_data('train_data_hyper.txt')
+	hyperyms_data = shuffle(hyperyms_data)
+	hyperyms_data = prepare_train_data(tokenizer, hyperyms_data)
+
+	hyponyms_data = get_train_data('train_data_hypo.txt')
+	hyponyms_data = shuffle(hyponyms_data)
+	hyponyms_data = prepare_train_data(tokenizer, hyponyms_data)
 
 	callback = keras.callbacks.EarlyStopping(patience=5, verbose=1)
-	dl_model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-	dl_model.fit(X_train, Y_train, batch_size=64, epochs=3, validation_split=0.2, verbose=1, callbacks=[callback], use_multiprocessing=True)
-	
-	predictions = dl_model.predict(X_test)
+	dl_model_hyperyms.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+	dl_model_hyponyms.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-	print(accuracy_score(Y_test, predictions.round()))
+	dl_model_hyperyms.fit(x=hyperyms_data['train'][0], y=hyperyms_data['train'][1], batch_size=64, epochs=3, validation_split=0.2, verbose=1, callbacks=[callback], use_multiprocessing=True)
 
+	predictions = dl_model_hyperyms.predict(hyperyms_data['test'][0])
 
+	print('Hypernym accuracy_score = ', accuracy_score(hyperyms_data['test'][1], predictions.round()))
+
+	dl_model_hyponyms.fit(x=hyponyms_data['train'][0], y=hyponyms_data['train'][1], batch_size=64, epochs=3, validation_split=0.2, verbose=1, callbacks=[callback], use_multiprocessing=True)
+
+	predictions = dl_model_hyponyms.predict(hyponyms_data['test'][0])
+
+	print('Hyponym accuracy_score = ', accuracy_score(hyponyms_data['test'][1], predictions.round()))
 
 if __name__ == '__main__':
 	main()

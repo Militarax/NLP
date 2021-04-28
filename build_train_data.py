@@ -37,7 +37,7 @@ def get_vocab():
 def save_train_data(vocab, model, neg_samples=1):
 	langdata = simplemma.load_data('ro')
 
-	with open('train_data.txt', 'a+', encoding='utf-8-sig') as train_data_file:
+	with open('train_data_hyper.txt', 'a+', encoding='utf-8-sig') as train_data_file:
 		with open('hypernyms.txt', 'r', encoding='utf-8-sig') as file:
 
 			for line in file:
@@ -65,6 +65,37 @@ def save_train_data(vocab, model, neg_samples=1):
 							train_data_file.write(',')
 
 							train_data_file.write(str(0) + '\n')
+
+	with open('train_data_hypo.txt', 'a+', encoding='utf-8-sig') as train_data_file:
+		with open('hyponyms.txt', 'r', encoding='utf-8-sig') as file:
+
+			for line in file:
+				words = line.split()
+				word, hyponyms = words[0], words[1:]
+				if len(hypernyms) != 0:
+					for hyponym in hyponyms:
+						if word != hypernym:
+							train_data_file.write(word)
+							train_data_file.write(',')
+
+							train_data_file.write(hyponym)
+							train_data_file.write(',')
+
+							train_data_file.write(str(1) + '\n')
+
+					for neg_sample in range(neg_samples * len(hyponyms)):
+						random_word = vocab[random.randint(0, len(vocab) - 1)]
+
+						if word != random_word:
+							train_data_file.write(word)
+							train_data_file.write(',')
+
+							train_data_file.write(random_word)
+							train_data_file.write(',')
+
+							train_data_file.write(str(0) + '\n')
+
+
 
 
 
@@ -141,8 +172,8 @@ def main():
 		vocab = model.wv.vocab
 
 	# extract_hypernyms_rowordnet(vocab, nlp, fasttext_model, wn)
-	extract_hyponyms_rowordnet(vocab, nlp, fasttext_model, wn)
-	# save_train_data(vocab, model)
+	# extract_hyponyms_rowordnet(vocab, nlp, fasttext_model, wn)
+	save_train_data(vocab, model)
 
 
 
