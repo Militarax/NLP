@@ -4,6 +4,7 @@ from gensim.test.utils import datapath
 from gensim.models.callbacks import CallbackAny2Vec
 
 prep_db_path = "D:\\DB\\prep"
+_EMBEDDING_DIM = 100
 
 class MonitorCallback(CallbackAny2Vec):
 	def __init__(self):
@@ -27,7 +28,7 @@ def main():
 
 	monitor = MonitorCallback()
 	sentences = gensim.models.word2vec.LineSentence(datapath(os.path.join(prep_db_path, 'corpus.txt')))
-	model = gensim.models.Word2Vec(sentences, size=100, window=7, min_count=20, sg=1, negative=10, workers=10, iter=3, callbacks=[monitor])
+	model = gensim.models.Word2Vec(sentences, size=_EMBEDDING_DIM, window=7, min_count=20, sg=1, negative=10, workers=10, iter=3, callbacks=[monitor])
 	
 	model.save("D:\\DB\\model\\word2vec.model")
 

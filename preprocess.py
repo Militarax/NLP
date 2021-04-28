@@ -1,7 +1,6 @@
 import os
 import nltk
 from nltk.corpus import stopwords
-from nltk.stem import SnowballStemmer
 from nltk import sent_tokenize, word_tokenize
 import string
 import re
